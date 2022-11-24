@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        nav {
+            margin-bottom: 1rem;
+        }
+
+        #main-title {
+            text-align: center;
+        }
+
+        .bank { 
+            float: left;
+            width: 20%;
+            height: 300px;
+            border: 1px solid red;
+            position: relative;
+        }
+
+        .bank .item {
+            position: initial;
+        }
+
+        .quadrants { 
+            display: inline-block;
+            width: 604px;
+            position: relative;
+        }
+
+        #y-axis {
+            display: inline-block;
+            height: 604px;
+            width: 180px;
+            background-color: antiquewhite;
+        }
+
+        #y-axis .axis-label {
+            display: flex;
+            float: left;
+            justify-content: center;
+            align-content: center;
+        }
+        
+
+        .quadrants .item {
+            position: absolute;
+            z-index: 1;
+        }
+
+        .quadrant-label {
+            float: right;
+            padding: .25rem;
+            background-color: lightgray;
+            z-index: 2;
+        }
+
+        .quadrant-title-input {
+            text-align: right;
+        }
+
+        .quadrant { 
+            float: left;
+            width: 300px;
+            height: 300px;
+            border: 1px solid salmon;
+            background: transparent;
+        }
+
+        .item {
+            display: inline-block;
+            background-color: lightcoral;
+            padding: 2px;
+            margin: 1px;
+            z-index: 100;
+            padding: .20rem .5rem;
+            border-radius: 10rem;
+        }
+
+        #trash-can {
+            width: 150px;
+            height: 150px;
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            background-color: gray;
+        }
+
+        #trash-can h6 { 
+            text-align: center;
+        }
+        
+    </style>
+</head>
+<body>
+    <main>
+        <nav>
+            <button onclick="clearAll()">Clear All</button>
+            <button onclick="resetItems()">Reset</button>
+            <button onclick="shareLink()">Share</button>
+        </nav>
+        <h3 id="main-title" class="reset-text" data-default="Click to Edit" onclick="editLabel(event)">CLick to Edit</h3>
+        <div>
+            <form onsubmit="addItem(event)">
+                <button type="submit">Add</button>
+                <input type="text" name="add-item" id="add-item" placeholder="Add Item" />
+            </form>
+        </div>
+        <div id="bank" class="bank" ondrop="drop_handler(event, this)" ondragover="dragover_handler(event)">
+            <div class="item" draggable="true" id="1" ondragstart="dragstart_handler(event)">Thing 1</div>
+            <div class="item" draggable="true" id="2" ondragstart="dragstart_handler(event)">Thing 2</div>
+            <div class="item" draggable="true" id="3" ondragstart="dragstart_handler(event)">Thing 3</div>
+            <div id="trash-can" ondrop="drop_trash(event, this)" ondragover="dragover_trash(event)">
+                <h6>TRASH</h6>
+            </div>
+        </div>
+
+        <div id="graph-container">
+
+            <div id="y-axis">
+                <div class="axis-label">Skill Level</div>
+            </div>
+
+            <div id="quadrants" class="quadrants" ondrop="drop_handler(event, this)" ondragover="dragover_handler(event)">
+
+                <div class="quadrant" data-quadrant="Q1">
+                    <div class="quadrant-label reset-text" id="q1-label" data-default="Click to Edit" onclick="editLabel(event)">Click to Edit</div>
+                </div>
+                <div class="quadrant" data-quadrant="Q2">
+                    <div class="quadrant-label reset-text" id="q2-label" data-default="Click to Edit" onclick="editLabel(event)">Click to Edit</div>
+                </div>
+                <div class="quadrant" data-quadrant="Q3">
+                    <div class="quadrant-label reset-text" id="q3-label" data-default="Click to Edit" onclick="editLabel(event)">Click to Edit</div>
+                </div>
+                <div class="quadrant" data-quadrant="Q4">
+                    <div class="quadrant-label reset-text" id="q4-label" data-default="Click to Edit" onclick="editLabel(event)">Click to Edit</div>
+                </div>
+            </div>
+        </div>
+
+        
+    </main>
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            const params = new Proxy(new URLSearchParams(window.location.search), {
+                get: (searchParams, prop) => searchParams.get(prop),
+            });
+
+            if (params.data) { 
+                const decodedJson = decodeURIComponent(params.data);
+                load(JSON.parse(decodedJson));
+            }
+        });
+
+        function clearAll() {
+            clearItems();
+            resetText();
+        }
+
+        function resetItems() {
+            const bankElem = document.getElementById("bank");
+            document.querySelectorAll(".item").forEach(item => {
+                item.classList.remove("placed-item");
+                item.dataset.x = 0;
+                item.dataset.y = 0;
+                bankElem.appendChild(item);
+            });
+        }
+
+        function clearItems() {
+            document.querySelectorAll(".item").forEach(item => item.remove());
+        }
+
+        function resetText() {
+            document.querySelectorAll(".reset-text").forEach(title => {
+                const defaultText = title.dataset.default;
+                title.innerText = defaultText;
+            });
+        }
+
+        function load(data) {
+            if (!data) return;
+            clearItems();
+            document.getElementById("main-title").innerText = data.title;
+            document.getElementById("q1-label").innerText = data.q1Label;
+            document.getElementById("q2-label").innerText = data.q2Label;
+            document.getElementById("q3-label").innerText = data.q3Label;
+            document.getElementById("q4-label").innerText = data.q4Label;
+
+            var i = 0;
+            data.items.forEach(item => {
+                createItem(++i, item.text, item.x, item.y, item.isPlaced);
+            });
+        }
+
+        function editLabel(ev) {
+            const currentText = ev.target.innerText;
+            ev.target.innerText = '';
+            const id = ev.target.id;
+            
+            const inputElem = document.createElement("input");
+            inputElem.type = "text";
+            inputElem.value = currentText;
+            inputElem.classList.add("quadrant-title-input");
+
+            inputElem.addEventListener("blur", (event) => {
+                const text = event.target.value;
+                console.log(text);
+                const parentElem = event.target.parentElement;
+                parentElem.innerText = text;
+                event.target.remove;
+            });
+
+            ev.target.appendChild(inputElem);
+            inputElem.focus();
+        }
+
+        function addItem(ev) {
+            ev.preventDefault();
+            const itemTextInput = document.getElementById('add-item');
+            if (itemTextInput.value) {
+                const newItemId = document.getElementsByClassName('item').length + 1;
+                createItem(newItemId, itemTextInput.value);
+                itemTextInput.value = '';
+            }
+        }
+
+        function dragstart_handler(ev) {
+            // Get mouse click offset
+            const rect = ev.target.getBoundingClientRect();
+            const xOffset = ev.clientX - window.scrollX - parseInt(rect.left,10); 
+            const yOffset = ev.clientY - window.scrollY - parseInt(rect.top,10);
+
+            const obj = { id: ev.target.id, mouseOffset: { x: xOffset, y: yOffset } };
+
+            ev.dataTransfer.setData("text/plain", JSON.stringify(obj));
+        }
+
+        function dragover_handler(ev) {
+            ev.preventDefault();
+        }
+
+        function dragover_trash(ev) {
+            ev.preventDefault();
+        }
+
+        function drop_trash(ev, el) {
+            const data = JSON.parse(ev.dataTransfer.getData("text/plain"));
+            const droppedItem = document.getElementById(data.id);
+            droppedItem.remove();
+        }
+        
+        function drop_handler(ev, el) {
+            ev.preventDefault();
+            
+            const quadrantsRect = el.getBoundingClientRect();
+            const xOffset = window.scrollX + parseInt(quadrantsRect.left,10); 
+            const yOffset = window.scrollY + parseInt(quadrantsRect.top,10);
+            const data = JSON.parse(ev.dataTransfer.getData("text/plain"));
+            const droppedItem = document.getElementById(data.id);
+            const xVal = ev.clientX - data.mouseOffset.x - xOffset;
+            const yVal = ev.clientY - data.mouseOffset.y - yOffset;
+            droppedItem.classList.add("placed-item");
+            droppedItem.style.left = xVal + 'px';
+            droppedItem.style.top = yVal + 'px';
+            droppedItem.dataset.x = xVal;
+            droppedItem.dataset.y = yVal;
+
+            if (ev.target.classList.contains("bank")) {
+                droppedItem.classList.remove("placed-item");
+                droppedItem.dataset.x = 0;
+                droppedItem.dataset.y = 0;
+            }
+            el.appendChild(droppedItem);
+        }
+      
+        function serialize() {
+            var items = Array();
+            document.querySelectorAll('.item').forEach(item => {
+                items.push({
+                    text: item.innerText,
+                    x: item.dataset.x,
+                    y: item.dataset.y,
+                    isPlaced: item.classList.contains('placed-item')
+                });
+            });
+
+            const obj = {
+                title: document.getElementById("main-title").innerText,
+                q1Label: document.getElementById("q1-label").innerText,
+                q2Label: document.getElementById("q2-label").innerText,
+                q3Label: document.getElementById("q3-label").innerText,
+                q4Label: document.getElementById("q4-label").innerText,
+                items
+            }
+
+            return JSON.stringify(obj);
+        }
+
+        function shareLink() {
+            const url = new URL(window.location.href);
+            console.log(url);
+            url.search = "data=" + encodeURIComponent(serialize());
+            console.log(url.href);
+            
+            navigator.clipboard.writeText(url.href).then(function(x) {
+                alert("Link copied to clipboard!");
+            });
+        }
+
+        function createItem(id, text, x = 0, y = 0, isPlaced = false) {
+            const itemDiv = document.createElement("div");
+            itemDiv.classList.add("item");
+            itemDiv.draggable = true;
+            itemDiv.addEventListener("dragstart", dragstart_handler);
+            itemDiv.innerText = text;
+            itemDiv.dataset.x = x;
+            itemDiv.dataset.y = y;
+            itemDiv.id = id;
+            
+            if (isPlaced) { 
+                itemDiv.classList.add("placed-item");
+                itemDiv.style.left = x + 'px';
+                itemDiv.style.top = y + 'px';
+                document.getElementById("quadrants").appendChild(itemDiv);
+            } else {
+                document.getElementById("bank").appendChild(itemDiv);
+            }
+        }
+
+        function showSerialized() {
+            alert(serialize());
+        }
+
+
+      </script>
+</body>
+</html>
