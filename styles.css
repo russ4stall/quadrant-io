@@ -42,12 +42,12 @@ label {
 #y-axis {
     display: inline-block;
     height: 604px;
-    width: 180px;
+    width: 100px;
 }
 
 #y-axis .axis-label {
     display: flex;
-    float: right;
+    float: left;
     justify-content: center;
     align-content: center;
     margin-top: 290px;
@@ -56,11 +56,28 @@ label {
     -webkit-transform: rotate(-90deg);
 }
 
-#x-axis .axis-label {
-    text-align: center;
+#y-axis .scale-thing {
+    clip-path: polygon(100% 0, 0 0, 100% 100%);
+    background-color: black;
+    width: 15px;
+    height: 100%;
+    float: right;
+}
+
+#x-axis {
     margin-left: 180px;
 }
 
+#x-axis .axis-label {
+    text-align: center;
+}
+
+#x-axis .scale-thing {
+    clip-path: polygon(100% 0, 0 0, 100% 100%);
+    background-color: black;
+    width: 100%;
+    height: 15px;
+}
 
 .quadrants .item {
     position: absolute;
